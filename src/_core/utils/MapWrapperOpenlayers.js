@@ -14,6 +14,7 @@ import Ol_Layer_Image from "ol/layer/Image";
 import Ol_Source_WMTS from "ol/source/WMTS";
 import Ol_Source_Cluster from "ol/source/Cluster";
 import Ol_Source_Vector from "ol/source/Vector";
+import Ol_Source_ImageStatic from "ol/source/ImageStatic";
 import Ol_Source_XYZ from "ol/source/XYZ";
 import Ol_Source_WMS from "ol/source/ImageWMS";
 import Ol_Tilegrid_WMTS from "ol/tilegrid/WMTS";
@@ -359,6 +360,8 @@ export default class MapWrapperOpenlayers extends MapWrapper {
     createLayer(layer, fromCache = true) {
         let mapLayer = false;
 
+        console.log("creating layer...")
+
         // pull from cache if possible
         let cacheHash = this.getCacheHash(layer);
         if (fromCache && this.layerCache.get(cacheHash)) {
@@ -389,6 +392,9 @@ export default class MapWrapperOpenlayers extends MapWrapper {
                 break;
             case appStrings.LAYER_VECTOR_KML:
                 mapLayer = this.createVectorLayer(layer, fromCache);
+                break;
+            case appStrings.LAYER_SINGLE_RASTER:
+                mapLayer = this.createSingleRasterLayer(layer, fromCache);
                 break;
             default:
                 console.warn(
@@ -607,6 +613,31 @@ export default class MapWrapperOpenlayers extends MapWrapper {
             });
         } catch (err) {
             console.warn("Error in MapWrapperOpenlayers.createVectorLayer:", err);
+            return false;
+        }
+    }
+
+    createSingleRasterLayer(layer, fromCache = true) {
+        // TODO: mlucas
+        console.log("Creating single raster layer...")
+        try {
+            let layerSource = this.createLayerSource(layer, {
+                url: layer.get("url"),
+            });
+            // if (layer.get("clusterVector")) {
+            //     layerSource = new Ol_Source_Cluster({ source: layerSource });
+            // }
+            console.log("Returned from createLayerSource")
+            console.log(layerSource)
+
+            return new Ol_Layer_Image({
+                opacity: layer.get("opacity"),
+                visible: layer.get("isActive"),
+                source: layerSource,
+                extent: appConfig.DEFAULT_MAP_EXTENT,
+            });
+        } catch (err) {
+            console.warn("Error in MapWrapperOpenlayers.createSingleRasterLayer:", err);
             return false;
         }
     }
@@ -1612,6 +1643,7 @@ export default class MapWrapperOpenlayers extends MapWrapper {
 
             // layer does not exist so we must create it
             mapLayer = this.createLayer(layer);
+            console.log("Returned from createLayer")
 
             // if the creation failed
             if (!mapLayer) {
@@ -2312,6 +2344,7 @@ export default class MapWrapperOpenlayers extends MapWrapper {
      */
     createLayerSource(layer, options, fromCache = true) {
         // check cache
+        console.log("Creating layer source...")
         if (fromCache) {
             let cacheHash = this.getCacheHash(layer) + "_source";
             if (this.layerCache.get(cacheHash)) {
@@ -2334,6 +2367,8 @@ export default class MapWrapperOpenlayers extends MapWrapper {
                 return this.createVectorTopojsonSource(layer, options);
             case appStrings.LAYER_VECTOR_KML:
                 return this.createVectorKMLSource(layer, options);
+            case appStrings.LAYER_SINGLE_RASTER:
+                return this.createSingleRasterSource(layer, options);
             default:
                 console.warn(
                     "Error in MapWrapperOpenlayers.createLayerSource: unknonw layer type - ",
@@ -2594,6 +2629,36 @@ export default class MapWrapperOpenlayers extends MapWrapper {
         return new Ol_Source_Vector({
             url: options.url,
             format: new Ol_Format_KML(),
+        });
+    }
+
+    createSingleRasterSource(layer, options) {
+        // customize the layer url if needed
+        // TODO: mlucas
+        console.log("Createing layer source 2...")
+        if (
+            typeof options.url !== "undefined" &&
+            typeof layer.getIn(["urlFunctions", appStrings.MAP_LIB_2D]) !== "undefined"
+        ) {
+            let urlFunction = this.tileHandler.getUrlFunction(
+                layer.getIn(["urlFunctions", appStrings.MAP_LIB_2D])
+            );
+            options.url = urlFunction({
+                layer: layer,
+                url: options.url,
+            });
+        }
+
+        const extent = [
+            9.67238484, // west
+            -2.08222212, // south
+            10.15003416, // east
+            -1.62751908  // north
+          ];
+
+        return new Ol_Source_ImageStatic({
+            url: options.url,
+            imageExtent: extent
         });
     }
 

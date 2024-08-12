@@ -1147,7 +1147,8 @@ export default class MapWrapperCesium extends MapWrapper {
             } else if (
                 mapLayer._layerHandleAs === appStrings.LAYER_VECTOR_GEOJSON ||
                 mapLayer._layerHandleAs === appStrings.LAYER_VECTOR_TOPOJSON ||
-                mapLayer._layerHandleAs === appStrings.LAYER_VECTOR_KML
+                mapLayer._layerHandleAs === appStrings.LAYER_VECTOR_KML ||
+                mapLayer._layerHandleAs === appStrings.LAYER_SINGLE_RASTER
             ) {
                 mapLayer.entities._entities._array.map((entity) => {
                     if (entity.polygon) {
@@ -1461,6 +1462,8 @@ export default class MapWrapperCesium extends MapWrapper {
                 return this.createVectorLayer(layer);
             case appStrings.LAYER_VECTOR_KML:
                 return this.createVectorLayer(layer);
+            case appStrings.LAYER_SINGLE_RASTER:
+                return this.createSingleRasterLayer(layer);
             default:
                 console.warn(
                     "Error in MapWrapperCesium.createLayer: unknown layer type - " +
@@ -1601,6 +1604,33 @@ export default class MapWrapperCesium extends MapWrapper {
             return false;
         } catch (err) {
             console.warn("Error in MapWrapperCesium.createVectorLayer:", err);
+        }
+    }
+
+    createSingleRasterLayer(layer) {
+        // TODO: mlucas
+        // cesium create layer method points to this
+        try {
+            let options = { url: layer.get("url") };
+            //let layerSource = this.createVectorSource(layer, options);
+            let layerSource = this.createGenericImageryProvider(layer, options)
+            if (layerSource) {
+                // layer source is a promise that acts as a stand-in while the data loads
+                // layerSource.then((mapLayer) => {
+                //     this.setLayerRefInfo(layer, mapLayer);
+                //     setTimeout(() => {
+                //         this.setLayerOpacity(layer, layer.get("opacity"));
+                //     }, 0);
+                // });
+
+
+                // need to add custom metadata while data loads
+                this.setLayerRefInfo(layer, layerSource);
+                return layerSource;
+            }
+            return false;
+        } catch (err) {
+            console.warn("Error in MapWrapperCesium.createSingleRasterLayer:", err);
         }
     }
 
@@ -1859,6 +1889,8 @@ export default class MapWrapperCesium extends MapWrapper {
                 return this.createGenericWMSProvider(layer, options);
             case appStrings.LAYER_XYZ_RASTER:
                 return this.createGenericXYZProvider(layer, options);
+            case appStrings.LAYER_SINGLE_RASTER:
+                return this.createGenericImageryProvider(layer, options);
             default:
                 console.warn(
                     "Error in MapWrapperCesium.createImageryProvider: unknown layer type - " +
@@ -2095,6 +2127,38 @@ export default class MapWrapperCesium extends MapWrapper {
             return false;
         } catch (err) {
             console.warn("Error in MapWrapperCesium.createGenericXYZProvider:", err);
+            return false;
+        }
+    }
+
+        /**
+     * create imagery provider
+     *
+     * @param {ImmutableJS.Map} layer layer object from map state in redux
+     * @param {object} options layer options
+     * - url - {string} base url for this layer
+     * - layer - {string} layer identifier
+     * - projection - {string} projection string
+     * - extents - {array} bounding box extents for this layer
+     * @returns {object} cesium imagery provider
+     * @memberof MapWrapperCesium
+     */
+    createGenericImageryProvider(layer, options) {
+        try {
+            if (typeof options !== "undefined") {
+                let west = this.cesium.Math.toRadians(9.67238484);
+                let south = this.cesium.Math.toRadians(-2.08222212);
+                let east = this.cesium.Math.toRadians(10.15003416);
+                let north = this.cesium.Math.toRadians(-1.62751908);
+
+                return new this.cesium.SingleTileImageryProvider({
+                    url: options.url,
+                    rectangle: new this.cesium.Rectangle(west, south, east, north),
+                });
+            }
+            return false;
+        } catch (err) {
+            console.warn("Error in MapWrapperCesium.createGenericImageryProvider:", err);
             return false;
         }
     }
@@ -2374,6 +2438,8 @@ export default class MapWrapperCesium extends MapWrapper {
             case appStrings.LAYER_VECTOR_TOPOJSON:
                 return this.map.dataSources;
             case appStrings.LAYER_VECTOR_KML:
+                return this.map.dataSources;
+            case appStrings.LAYER_SINGLE_RASTER:
                 return this.map.dataSources;
             default:
                 return this.map.imageryLayers;

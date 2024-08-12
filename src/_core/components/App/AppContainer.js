@@ -129,7 +129,7 @@ export class AppContainer extends Component {
         return (
             <MuiThemeProvider theme={theme}>
                 <div className={containerClasses}>
-                    <DatePickerContainer />
+                    {/* <DatePickerContainer /> */}
                     <HelpContainer />
                     <MapContainer />
                     <LoadingContainer />
@@ -139,7 +139,7 @@ export class AppContainer extends Component {
                     <ShareContainer />
                     <LayerInfoContainer />
                     <LayerMenuContainer />
-                    <TimelineContainer />
+                    {/* <TimelineContainer /> */}
                     <AlertsContainer />
                     <MapContextMenu />
                     <MouseFollowerContainer />

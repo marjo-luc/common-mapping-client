@@ -54,7 +54,7 @@ export class LayerMenuContainer extends Component {
                     <div className={styles.layerHeaderRow}>
                         <div className={styles.layerHeader}>
                             <Typography variant="subtitle1" color="inherit">
-                                Map Layers
+                                STV-FIS
                             </Typography>
                         </div>
                         <div className="text-right">

@@ -1408,13 +1408,95 @@ export default class MapWrapperOpenlayers extends MapWrapper {
                     });
                 }
 
+                let isUpdating = false;
+                drawInteraction.on("drawstart", (event) => {
+                    console.log("on drawstart")
+                    const feature = event.feature;
+                    const geometry = feature.getGeometry();
+
+                    geometry.on('change', function () {
+                        if (isUpdating) return;
+                        isUpdating = true;
+                        const coordinates = geometry.getCoordinates();
+
+                        if (coordinates.length === 2) {
+                        const start = coordinates[0];
+                        const end = coordinates[1];
+
+                        const dx = Math.abs(end[0] - start[0]);
+                        const dy = Math.abs(end[1] - start[1]);
+
+                        if (dx > dy) {
+                            // Constrain to horizontal
+                            end[1] = start[1];
+                        } else {
+                            // Constrain to vertical
+                            end[0] = start[0];
+                        }
+
+                        // Update the coordinates to the constrained values
+                        geometry.setCoordinates([start, end]);
+                        }
+                        isUpdating = false;
+                    });
+
+                    // store type of feature and id for later reference
+                    //let geometry = this.retrieveGeometryFromEvent(event, geometryType);
+                    // TODO: mlucas
+                    console.log(geometry)
+                    event.feature.set("interactionType", interactionType);
+                    event.feature.setId(geometry.id);
+                    //onDrawStart(geometry, event);
+                });
+
+
+                async function getTomoData() {
+                    let url = ""
+
+                    try {
+                        const requestOptions = {
+                            method: "GET",
+                            redirect: "follow",
+                            // mode: "no-cors"
+                          };
+
+                        let response = await fetch(url, requestOptions)
+                        console.log("got response")
+                        //console.log(response)
+
+                        if (response) {
+                            console.log("response okay")
+                            const imageBlob = await response.blob()
+                            const imageObjectURL = URL.createObjectURL(imageBlob);
+
+
+                            const image = document.createElement('img')
+                            image.src = imageObjectURL
+
+                            const container = document.getElementById("app")
+                            container.append(image)
+                        }
+                        else {
+                            console.log("HTTP-Error: " + response.status)
+                        }
+
+                        return "";
+
+                    } catch (error) {
+                        console.error('Failed to fetch image:', error);
+                    }
+                }
+
                 // Set callback
                 drawInteraction.on("drawend", (event) => {
                     if (typeof onDrawEnd === "function") {
                         // store type of feature and id for later reference
                         let geometry = this.retrieveGeometryFromEvent(event, geometryType);
+                        // TODO: mlucas
+                        console.log(geometry)
                         event.feature.set("interactionType", interactionType);
                         event.feature.setId(geometry.id);
+                        let response = getTomoData()
                         onDrawEnd(geometry, event);
                     }
                 });

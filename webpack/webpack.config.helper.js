@@ -128,7 +128,7 @@
          devServer: {
              static: [path.resolve(BASE_DIR, 'dist'), path.resolve(BASE_DIR, 'assets'), path.resolve(BASE_DIR, 'src')],
              compress: true,
-             port: 9000,
+             port: 9014,
              hot: false,
          },
          plugins: [

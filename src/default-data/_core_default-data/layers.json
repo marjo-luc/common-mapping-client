@@ -8,7 +8,7 @@
             "updateParameters": {
                 "time": false
             },
-            "url": "http://localhost:8000/images/topoverlay.png",
+            "url": "default-data/_core_default-data/images/topoverlay.png",
             "metadata": {
                 "url": "default-data/_core_default-data/layer-metadata/rabi.json",
                 "handleAs": "json"

@@ -1409,6 +1409,8 @@ export default class MapWrapperOpenlayers extends MapWrapper {
                 }
 
                 let isUpdating = false;
+
+
                 drawInteraction.on("drawstart", (event) => {
                     console.log("on drawstart")
                     const feature = event.feature;
@@ -1442,22 +1444,29 @@ export default class MapWrapperOpenlayers extends MapWrapper {
 
                     // store type of feature and id for later reference
                     //let geometry = this.retrieveGeometryFromEvent(event, geometryType);
-                    // TODO: mlucas
-                    console.log(geometry)
+
                     event.feature.set("interactionType", interactionType);
                     event.feature.setId(geometry.id);
                     //onDrawStart(geometry, event);
                 });
 
 
-                async function getTomoData() {
+                async function getTomoData(tomoLngLat) {
                     let url = ""
+                    if (tomoLngLat.minLng == tomoLngLat.maxLng) {
+                        // vertical line
+                        url = ``
+                    }else {
+                        // horizontal line
+                        url = ``
+                    }
+                    console.log("Tomo latlng: ", tomoLngLat)
 
                     try {
                         const requestOptions = {
                             method: "GET",
                             redirect: "follow",
-                            // mode: "no-cors"
+                            mode: "no-cors"
                           };
 
                         let response = await fetch(url, requestOptions)
@@ -1489,14 +1498,56 @@ export default class MapWrapperOpenlayers extends MapWrapper {
 
                 // Set callback
                 drawInteraction.on("drawend", (event) => {
+                    let tomoLngLat = {minLat: null,
+                        maxLat: null,
+                        minLng: null,
+                        maxLng: null}
+
                     if (typeof onDrawEnd === "function") {
                         // store type of feature and id for later reference
                         let geometry = this.retrieveGeometryFromEvent(event, geometryType);
                         // TODO: mlucas
                         console.log(geometry)
+                        if (geometry) {
+                            console.log(geometry["coordinates"])
+                            if (geometry["coordinates"]) {
+                                console.log("coordinates defined")
+                                let startCoord = {lat: null, lon: null}
+                                let endCoord = {lat: null, lon: null}
+                                startCoord = geometry.coordinates[0]
+                                endCoord = geometry.coordinates[1]
+
+                                if (startCoord.lat === endCoord.lat) {
+                                    console.log("horizontal line")
+                                    tomoLngLat.minLat = startCoord.lat
+                                    tomoLngLat.maxLat = startCoord.lat
+                                    // horizonal line -- sdap request latitude
+                                    if (startCoord.lon > endCoord.lon) {
+                                        tomoLngLat.maxLng = startCoord.lon
+                                        tomoLngLat.minLng = endCoord.lon
+                                    } else {
+                                        tomoLngLat.maxLng = endCoord.lon
+                                        tomoLngLat.minLng = startCoord.lon
+                                    }
+                                } else {
+                                    console.log("vertical line")
+                                    tomoLngLat.minLng = startCoord.lon
+                                    tomoLngLat.maxLng = startCoord.lon
+                                    // vertical line -- sdap request longitude
+                                    if (startCoord.lat > endCoord.lat) {
+                                        tomoLngLat.maxLat = startCoord.lat
+                                        tomoLngLat.minLat = endCoord.lat
+                                    } else {
+                                        tomoLngLat.maxLat = endCoord.lat
+                                        tomoLngLat.minLat = startCoord.lat
+                                    }
+                                }
+                            }
+                        }
+                        console.log(tomoLngLat)
                         event.feature.set("interactionType", interactionType);
                         event.feature.setId(geometry.id);
-                        let response = getTomoData()
+                        let response = getTomoData(tomoLngLat)
                         onDrawEnd(geometry, event);
                     }
                 });
@@ -2717,7 +2768,6 @@ export default class MapWrapperOpenlayers extends MapWrapper {
     createSingleRasterSource(layer, options) {
         // customize the layer url if needed
         // TODO: mlucas
-        console.log("Createing layer source 2...")
         if (
             typeof options.url !== "undefined" &&
             typeof layer.getIn(["urlFunctions", appStrings.MAP_LIB_2D]) !== "undefined"

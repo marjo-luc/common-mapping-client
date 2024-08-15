@@ -5,7 +5,6 @@ COPY . /app
 
 RUN npm install --legacy-peer-deps
 RUN npm run build
-RUN npm run start
 
 # UI
 EXPOSE 9014

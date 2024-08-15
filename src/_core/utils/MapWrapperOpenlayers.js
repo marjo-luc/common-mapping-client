@@ -1466,7 +1466,7 @@ export default class MapWrapperOpenlayers extends MapWrapper {
                         const requestOptions = {
                             method: "GET",
                             redirect: "follow",
-                            mode: "no-cors"
+                            // mode: "no-cors"
                           };
 
                         let response = await fetch(url, requestOptions)
